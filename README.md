@@ -1,6 +1,6 @@
 # Computer Networks Lab - Algorithm Implementations
 
-This repository contains Java implementations and NS2 scripts for standard Computer Networks laboratory experiments. The codes cover the Data Link Layer, Network Layer, and Transport Layer protocols using Socket Programming and Simulation logic.
+This repository contains Java implementations for standard Computer Networks laboratory experiments. The codes cover the Data Link Layer, Network Layer, and Transport Layer protocols using Socket Programming and Simulation logic.
 
 ---
 
