@@ -1,79 +1,132 @@
-# Networking Algorithms and Protocols Implementations
+# Computer Networks Lab - Algorithm Implementations
 
-## Overview
-
-This repository contains educational Java implementations and simulations of key networking algorithms and protocols related to computer networks and data communication. It is intended for students, learners, and enthusiasts looking to understand the core concepts behind routing, framing, congestion control, scheduling, and error detection in networks.
+This repository contains Java implementations and NS2 scripts for standard Computer Networks laboratory experiments. The codes cover the Data Link Layer, Network Layer, and Transport Layer protocols using Socket Programming and Simulation logic.
 
 ---
 
-## Implementations Included
+## 📋 Table of Contents
 
-### 1. Routing Algorithms
-- **Dijkstra’s Algorithm**: Computes shortest path in a graph (network) using greedy approach.
-- **Distance Vector Routing**: Simulates routers exchanging routing tables and converging to stable routes dynamically.
-
-### 2. Framing Schemes (Data Link Layer)
-- **Bit Stuffing**: Inserts bits to avoid accidental frame delimiter occurrence (with destuffing).
-- **Character Stuffing**: Uses special characters (DLE, STX, ETX) as frame delimiters and escapes them within data.
-
-### 3. Error Detection
-- **CRC (Cyclic Redundancy Check)**: Implements modular-2 division with any user-specified generator polynomial for framing and error checking.
-
-### 4. Network Simulation Basics
-- **Connecting hosts in a LAN**: Basic server-client Java example simulating LAN host connection over TCP sockets.
-
-### 5. Congestion Control (TCP)
-- **Slow Start**: Exponential growth of congestion window.
-- **Congestion Avoidance**: Linear increase of congestion window after threshold.
-- **Fast Retransmit & Fast Recovery**: Quick loss detection and recovery mechanisms using duplicate ACKs.
-
-### 6. Packet Scheduling Algorithms
-- **FIFO**: First in, first out queuing.
-- **Priority Queue**: Packets scheduled based on priority.
-- **Fair Queuing**: Round-robin over multiple flows.
-- **Weighted Fair Queuing (WFQ)**: Each flow gets service proportional to assigned weight.
+- [Prerequisites](#prerequisites)
+- [How to Run Socket Programs](#how-to-run-socket-programs)
+- [Part A: Data Link Layer (Framing & Error Control)](#part-a-data-link-layer-framing--error-control)
+- [Part B: Flow Control (Sliding Window Protocols)](#part-b-flow-control-sliding-window-protocols)
+- [Part C: Network Layer (Routing & Switching)](#part-c-network-layer-routing--switching)
+- [Part D: Transport Layer (TCP & Scheduling)](#part-d-transport-layer-tcp--scheduling)
 
 ---
 
-## How To Use
+## 🛠 Prerequisites
 
-Each Java class contains a `main` method to run simple simulations or tests. You can:
-- Run each file independently by compiling with `javac` and running with `java`.
-- Modify the input data within the classes or add user input as required.
-- Observe console output for step-by-step explanation or results.
-
----
-
-## Learning Objectives
-
-- Understand shortest path and dynamic routing principles via Dijkstra’s and Distance Vector algorithms.
-- Comprehend framing techniques for error-free data transfer in data link layer.
-- Learn error detection with CRC and generator polynomials.
-- Grasp TCP congestion control mechanism with simulation of window dynamics.
-- Explore packet scheduling strategies used in routers to manage network traffic.
+- **Java Development Kit (JDK)**: Version 8 or higher.
+- **NS2 (Network Simulator 2)**: Required only for the `.tcl` scripts (Wired/Wireless simulations).
+- **NAM (Network Animator)**: To visualize NS2 output.
 
 ---
 
-## Tools & Environment
+## 🚀 How to Run Socket Programs
 
-- Java 8+ for running the simulations.
-- Console-based programs for interactive learning.
+Most Data Link Layer experiments use Client-Server Architecture. You must run them in the following order:
+
+1. Compile both files:
+```javac Sender.java Receiver.java```
+
+2. Run the Receiver (Server) first:
+```java Receiver```
+
+It will pause and wait for a connection.
+
+3. Run the Sender (Client) in a new terminal:
+```java Sender```
+
+
+**Tip:** If you get a `BindException: Address already in use` error, wait 10 seconds for the port to clear or change the port number (e.g., 9999 to 8080) in both source files.
 
 ---
 
-## References
+## 📡 Part A: Data Link Layer
 
-- Networking textbooks and academic courses on Computer Networks.
-- [GeeksforGeeks - Networking](https://www.geeksforgeeks.org/computer-networks/)
-- RFC standards for TCP/IP and routing protocols.
+### 1. Checksum (Error Detection)
+
+- **Files:** ChecksumSender.java, ChecksumReceiver.java
+- **Logic:** Sender calculates Sum & 1's Complement. Receiver adds Sum + Checksum. Result must be all 1s (-1).
+- Includes random 50% or 30% chance to corrupt data to demonstrate error detection.
+
+### 2. CRC (Cyclic Redundancy Check)
+
+- **Files:** CRCSender.java, CRCReceiver.java
+- **Logic:** Uses Modulo-2 Binary Division (XOR).
+- **Input:** User enters Binary Data (e.g., 10110) and Generator Polynomial (e.g., 1101).
+- Simulates bit flipping to prove the receiver rejects corrupted frames.
+
+### 3. Framing Algorithms (Bit & Character Stuffing)
+
+- **File:** FramingSchemes.java
+- **Type:** Menu-Driven Console Application.
+- Bit Stuffing: Inserts a 0 after five consecutive 1s.
+- Character Stuffing: Escapes `DLE` characters in data by doubling them (`DLEDLE`).
 
 ---
 
-## Contact
+## 🔄 Part B: Flow Control (Sliding Window)
 
-For suggestions or questions, please open an issue or reach out on the project repository.
+### 4. Stop and Wait ARQ
+
+- **Files:** Sender.java, Receiver.java
+- **Logic:** Sender sends 1 packet and waits. Uses `socket.setSoTimeout(2000)` to detect lost packets.
+- Covers Lost Frame, Lost ACK, and Delayed ACK scenarios.
+
+### 5. Go-Back-N ARQ
+
+- **Files:** GBNSender.java, GBNReceiver.java
+- Sender has a window size (e.g., 4). On Timeout, sender resends the entire window from last un-acked packet.
+- Receiver discards any out-of-order packet (Cumulative ACK).
+
+### 6. Selective Repeat ARQ
+
+- **Files:** SRSender.java, SRReceiver.java
+- Sender resends only the specific lost packet.
+- Receiver accepts out-of-order packets and buffers them. Sends individual ACKs.
 
 ---
 
-This README provides a comprehensive overview of implementations for academic or practical learning use.
+## 🌐 Part C: Network Layer
+
+### 7. Dijkstra's Algorithm (Shortest Path)
+
+- **File:** Dijkstra.java
+- **Input:** Adjacency Matrix (Weights).
+- **Output:** Prints shortest cost and exact path (e.g., 0 → 2 → 1 → 4) from source to all nodes.
+
+### 8. Distance Vector Routing (DVR)
+
+- **File:** DistanceVectorRouting.java
+- Simulates Bellman-Ford equation. Routers exchange tables iteratively until convergence.
+- Prints final Routing Table (Destination | Cost | Next Hop).
+
+### 9. Connecting Hosts in LAN (Learning Switch)
+
+- **File:** LANSwitch.java
+- Simulates a Switch Forwarding Table with Learning (records Source MAC & Port), Flooding, and Forwarding phases.
+
+---
+
+## 📦 Part D: Transport Layer
+
+### 10. Packet Scheduling Algorithms
+
+- **File:** PacketScheduling.java
+- **Type:** Menu-Driven Console Application.
+- Includes FIFO, Priority Queue, Fair Queuing (Round-Robin), and Weighted Fair Queuing (WFQ).
+
+### 11. TCP Congestion Control
+
+- **File:** TCPCongestionControl.java
+- **Type:** State Machine Simulation.
+- Includes Slow Start (Exponential), Congestion Avoidance (Linear), Fast Retransmit, and Fast Recovery.
+- User inputs events (a for ACK, t for Timeout, d for 3 Duplicate ACKs) to see `cwnd` change.
+
+---
+
+
+
 
