@@ -18,8 +18,6 @@ This repository contains Java implementations for standard Computer Networks lab
 ## 🛠 Prerequisites
 
 - **Java Development Kit (JDK)**: Version 8 or higher.
-- **NS2 (Network Simulator 2)**: Required only for the `.tcl` scripts (Wired/Wireless simulations).
-- **NAM (Network Animator)**: To visualize NS2 output.
 
 ---
 
