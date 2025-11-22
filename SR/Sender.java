@@ -2,14 +2,22 @@ package CN.SR;
 
 import java.io.*;
 import java.net.*;
+import java.text.SimpleDateFormat; // For Date Formatting
+import java.util.Date;
 
 public class Sender {
+
+    // Helper to generate timestamp string
+    private static String getTimestamp() {
+        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
+    }
+
     public static void main(String[] args) throws IOException, InterruptedException {
         String host = "localhost";
         int port = 9999;
 
         Socket socket = new Socket(host, port);
-        // Timer set to 2 seconds
+        // Timer set to 2 seconds (Timeout duration)
         socket.setSoTimeout(2000);
 
         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -24,19 +32,18 @@ public class Sender {
         // To track which packets have been ACKed (True = ACKed, False = Pending)
         boolean[] ackReceived = new boolean[packets.length];
 
-        System.out.println("--- Selective Repeat Sender Started ---");
+        System.out.println("[" + getTimestamp() + "] --- Selective Repeat Sender Started ---");
 
         while (base < packets.length) {
 
             // 1. SEND NEW PACKETS (if window allows)
-            // Only send if we haven't sent it before (checked via nextSeqNum)
             while (nextSeqNum < base + windowSize && nextSeqNum < packets.length) {
-                // Check if we already have an ACK (could happen in retransmission scenarios
-                // logic, but safely ignored here)
+                // Only send if not already ACKed (safe check)
                 if (!ackReceived[nextSeqNum]) {
-                    System.out.println("\nSending New Frame: " + nextSeqNum + " (" + packets[nextSeqNum] + ")");
+                    System.out.println("[" + getTimestamp() + "] Sending New Frame: " + nextSeqNum + " ("
+                            + packets[nextSeqNum] + ")");
                     out.println(nextSeqNum + "|" + packets[nextSeqNum]);
-                    Thread.sleep(1000); // Delay for visualization
+                    Thread.sleep(500); // Small delay to separate logs visually
                 }
                 nextSeqNum++;
             }
@@ -46,7 +53,7 @@ public class Sender {
                 String ackStr = in.readLine();
                 if (ackStr != null) {
                     int ack = Integer.parseInt(ackStr);
-                    System.out.println("--> Received ACK for: " + ack);
+                    System.out.println("[" + getTimestamp() + "] --> ✅ Received ACK for: " + ack);
 
                     // Mark this specific packet as ACKed
                     if (ack < packets.length) {
@@ -55,30 +62,29 @@ public class Sender {
 
                     // Slide window ONLY if the base is ACKed
                     while (base < packets.length && ackReceived[base]) {
-                        base++; // Move base forward to the next un-acked packet
-                        System.out.println("--> Window Slide! New Base: " + base);
+                        System.out.println("[" + getTimestamp() + "] --> ⏩ Window Slide! Old Base: " + base
+                                + ", New Base: " + (base + 1));
+                        base++; // Move base forward
                     }
                 }
 
             } catch (SocketTimeoutException e) {
                 // 3. SELECTIVE RETRANSMIT LOGIC
-                // Instead of resending ALL, we find the ONE that is missing (base)
+                System.out.println("\n[" + getTimestamp() + "] !!! ⏰ TIMEOUT !!! ACK missing for Base Frame " + base);
+                System.out.println(
+                        "[" + getTimestamp() + "] !!! Selective Repeat: Resending ONLY Packet " + base + " !!!");
 
-                System.out.println("\n!!! TIMEOUT !!! ACK missing for " + base);
-                System.out.println("!!! Selective Repeat: Resending ONLY Packet " + base + " !!!");
-
-                // Resend only the base packet (the oldest un-acked one)
-                // Note: Real SR maintains timers for every packet, but this simulates the
-                // behavior sufficiently.
+                // Resend only the base packet (the one causing the stall)
                 if (base < packets.length) {
                     out.println(base + "|" + packets[base]);
                 }
 
-                Thread.sleep(2000); // Pause so you can see the retransmission
+                // Pause to visualize the penalty
+                Thread.sleep(1000);
             }
         }
 
-        System.out.println("\nAll data sent and acknowledged.");
+        System.out.println("\n[" + getTimestamp() + "] All data sent and acknowledged.");
         socket.close();
     }
 }

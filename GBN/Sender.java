@@ -2,14 +2,22 @@ package CN.GBN;
 
 import java.io.*;
 import java.net.*;
+import java.text.SimpleDateFormat; // Date formatting
+import java.util.Date;
 
 public class Sender {
-    public static void main(String[] args) throws IOException, InterruptedException { // InterruptedException add kiya
+
+    // Timestamp Helper
+    private static String getTimestamp() {
+        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
+    }
+
+    public static void main(String[] args) throws IOException, InterruptedException {
         String host = "localhost";
         int port = 9999;
 
         Socket socket = new Socket(host, port);
-        socket.setSoTimeout(3000); // Timer ko 3 sec kar diya taaki aapko padhne ka time mile
+        socket.setSoTimeout(3000); // 3 Seconds Timeout
 
         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
@@ -18,59 +26,60 @@ public class Sender {
         String[] packets = { "Packet0", "Packet1", "Packet2", "Packet3", "Packet4", "Packet5", "Packet6", "Packet7",
                 "Packet8" };
 
-        int windowSize = 4; // Window size 4 rakhi hai
+        int windowSize = 4;
         int base = 0;
         int nextSeqNum = 0;
 
-        System.out.println("--- Go-Back-N Sender Started ---");
-        System.out.println("Window Size: " + windowSize);
+        System.out.println("[" + getTimestamp() + "] --- Go-Back-N Sender Started ---");
+        System.out.println("[" + getTimestamp() + "] Window Size: " + windowSize);
 
         while (base < packets.length) {
 
-            // 1. SENDING LOOP: Window full hone tak packets bhejo
+            // 1. SENDING LOOP: Fill the window
             while (nextSeqNum < base + windowSize && nextSeqNum < packets.length) {
-                System.out.println("\nSending Frame: " + nextSeqNum + " (" + packets[nextSeqNum] + ")");
+                System.out.println(
+                        "\n[" + getTimestamp() + "] Sending Frame: " + nextSeqNum + " (" + packets[nextSeqNum] + ")");
                 out.println(nextSeqNum + "|" + packets[nextSeqNum]);
                 nextSeqNum++;
 
-                // --- DELAY 1: Har packet ke beech mein ---
-                System.out.println("... (waiting 1.5s) ...");
+                // --- DELAY: Visual gap between packets ---
+                System.out.println("[" + getTimestamp() + "] ... (waiting 1.5s) ...");
                 Thread.sleep(1500);
             }
 
-            // 2. WAITING LOOP: ACKs ka wait karo
+            // 2. WAITING LOOP: Wait for ACKs
             try {
-                // Hum yahan wait kar rahe hain. Agar ACK nahi aaya toh Timeout hoga.
                 String ackStr = in.readLine();
 
                 if (ackStr != null) {
                     int ack = Integer.parseInt(ackStr);
-                    System.out.println("--> ACK Received for Seq: " + ack);
+                    System.out.println("[" + getTimestamp() + "] --> ✅ ACK Received for Seq: " + ack);
 
                     // Cumulative ACK logic
                     if (ack >= base) {
                         base = ack + 1;
-                        System.out.println(
-                                "--> Window Slides! New Base: " + base + " (Next packet to send: " + nextSeqNum + ")");
+                        System.out.println("[" + getTimestamp() + "] --> ⏩ Window Slides! New Base: " + base
+                                + " (Next packet to send: " + nextSeqNum + ")");
                     }
                 }
 
             } catch (SocketTimeoutException e) {
                 // 3. TIMEOUT LOGIC (GO-BACK-N)
                 System.out.println("\n------------------------------------------------");
-                System.out.println("!!! TIMEOUT !!! ACK nahi mila.");
-                System.out.println("!!! Go-Back-N Triggered: Resending from Seq " + base + " !!!");
+                System.out.println("[" + getTimestamp() + "] !!! ⏰ TIMEOUT !!! ACK not received.");
+                System.out.println(
+                        "[" + getTimestamp() + "] !!! Go-Back-N Triggered: Resending from Seq " + base + " !!!");
                 System.out.println("------------------------------------------------\n");
 
-                // Next sequence ko wapas base par set karo (Resetting Window)
+                // Reset nextSeqNum to base (Re-send everything in window)
                 nextSeqNum = base;
 
-                // --- DELAY 2: Error message padhne ke liye ---
+                // --- DELAY: Pause to read error ---
                 Thread.sleep(3000);
             }
         }
 
-        System.out.println("\nAll data sent successfully.");
+        System.out.println("\n[" + getTimestamp() + "] All data sent successfully.");
         socket.close();
     }
 }

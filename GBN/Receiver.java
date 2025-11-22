@@ -3,19 +3,27 @@ package CN.GBN;
 import java.io.*;
 import java.net.*;
 import java.util.Random;
+import java.text.SimpleDateFormat; // Date formatting
+import java.util.Date;
 
 public class Receiver {
+
+    // Timestamp Helper
+    private static String getTimestamp() {
+        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
+    }
+
     public static void main(String[] args) throws IOException, InterruptedException {
         int port = 9999;
         ServerSocket serverSocket = new ServerSocket(port);
-        System.out.println("Receiver (Server) waiting on port " + port + "...");
+        System.out.println("[" + getTimestamp() + "] Receiver (Server) waiting on port " + port + "...");
 
         Socket socket = serverSocket.accept();
         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 
         Random random = new Random();
-        int expectedSeq = 0; // The packet we are waiting for
+        int expectedSeq = 0;
 
         while (true) {
             String frame = in.readLine();
@@ -27,32 +35,32 @@ public class Receiver {
             int receivedSeq = Integer.parseInt(parts[0]);
             String data = parts[1];
 
-            System.out.println("\nReceived Frame: " + receivedSeq);
+            System.out.println("\n[" + getTimestamp() + "] Received Frame: " + receivedSeq);
             Thread.sleep(500); // Small processing delay
 
             // 1. Simulate Packet Loss (20% chance)
             if (random.nextInt(10) < 2) {
-                System.out.println("--> [SIMULATION] Packet " + receivedSeq + " Lost in network!");
-                continue; // We don't send anything. Sender will eventually timeout.
+                System.out.println(
+                        "[" + getTimestamp() + "] --> ❌ [SIMULATION] Packet " + receivedSeq + " Lost in network!");
+                continue; // Sender will eventually timeout
             }
 
             // 2. Logic: Is it the packet we expected?
             if (receivedSeq == expectedSeq) {
-                System.out.println("--> Packet Accepted: " + data);
+                System.out.println("[" + getTimestamp() + "] --> ✅ Packet Accepted: " + data);
 
-                // Send ACK for this packet
-                // Note: In GBN, ACK n usually means "I expect n+1",
-                // but for this lab demo, "ACK n" means "I got n".
+                // Send ACK
                 out.println(receivedSeq);
-                System.out.println("--> Sent ACK " + receivedSeq);
+                System.out.println("[" + getTimestamp() + "] --> Sent ACK " + receivedSeq);
 
-                expectedSeq++; // Move to next expected
+                expectedSeq++;
             } else {
-                // Out of order packet! Discard it and ACK the LAST valid packet.
-                System.out.println("--> Out of Order! Expected " + expectedSeq + " but got " + receivedSeq);
-                System.out.println("--> Discarding " + receivedSeq + " and resending ACK " + (expectedSeq - 1));
+                // Out of order packet! Discard it.
+                System.out.println("[" + getTimestamp() + "] --> ⚠️ Out of Order! Expected " + expectedSeq + " but got "
+                        + receivedSeq);
+                System.out.println("[" + getTimestamp() + "] --> 🗑️ Discarding " + receivedSeq + " and resending ACK "
+                        + (expectedSeq - 1));
 
-                // If we haven't received anything yet (expected=0), we can't ack -1.
                 if (expectedSeq > 0) {
                     out.println(expectedSeq - 1);
                 }
